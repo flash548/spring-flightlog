@@ -1,16 +1,13 @@
 package com.galvanize.flightlog;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
-import javax.persistence.*;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
 import java.util.Date;
 
-@Entity
-@Table(name = "flights")
-public class Flights {
+public class ResolvedFlight {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,7 +22,7 @@ public class Flights {
     private String depart_from;
     private String arrive_to;
     private Integer tail_number;
-    private Integer pilot;
+    private String pilot;
     private String remarks;
 
     public Long getId() {
@@ -76,11 +73,11 @@ public class Flights {
         this.tail_number = tail_number;
     }
 
-    public Integer getPilot() {
+    public String getPilot() {
         return pilot;
     }
 
-    public void setPilot(Integer pilot) {
+    public void setPilot(String pilot) {
         this.pilot = pilot;
     }
 
@@ -92,3 +89,4 @@ public class Flights {
         this.remarks = remarks;
     }
 }
+

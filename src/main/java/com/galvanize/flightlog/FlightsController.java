@@ -1,11 +1,13 @@
 package com.galvanize.flightlog;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletResponse;
-import java.util.Optional;
+import java.util.*;
 
+@CrossOrigin(origins = "http://localhost:8080")
 @RestController
 public class FlightsController {
 
@@ -19,6 +21,11 @@ public class FlightsController {
         this.flightsRepository = flightsRepository;
         this.usersRepository = usersRepository;
         this.modelsRepository = modelsRepository;
+    }
+
+    @GetMapping("/users")
+    public Iterable<Users> getUsers() {
+        return this.usersRepository.findAll();
     }
 
     @GetMapping("/flights/pilot/{id}")
@@ -125,12 +132,55 @@ public class FlightsController {
         }
     }
 
-    @PatchMapping("/flights/update/time/{id}/{flightId}/{departTime}/{arriveTime}")
-    public String updateTimeFlight(@PathVariable Long id, @PathVariable Long flightId,
-                                   @PathVariable String departTime, @PathVariable String arriveTime, HttpServletResponse resp) {
+    @PatchMapping("/flights/update/plane/{id}/{flightId}/{tailNumber}")
+    public String updatePlane(@PathVariable Long id, @PathVariable Long flightId, @PathVariable Integer tailNumber, HttpServletResponse resp) {
         if (this.usersRepository.isUserIdAdmin(id)) {
             try {
-                this.flightsRepository.updateFlightTimeById(flightId, departTime, arriveTime);
+                this.flightsRepository.updateFlightPlaneById(flightId, tailNumber);
+                return "Updated";
+            }
+            catch (Exception e) {
+                resp.setStatus(500);
+                return "Flight ID or Plane Tail Number not found";
+            }
+        }
+        else {
+            resp.setStatus(500);
+            return "Action requires admin";
+        }
+    }
+
+    static class FlightDateTime {
+
+        @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss")
+        private Date depart;
+
+        @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss")
+        private Date arrive;
+
+        public Date getDepart() {
+            return depart;
+        }
+
+        public void setDepart(Date depart) {
+            this.depart = depart;
+        }
+
+        public Date getArrive() {
+            return arrive;
+        }
+
+        public void setArrive(Date arrive) {
+            this.arrive = arrive;
+        }
+    }
+
+    @PatchMapping("/flights/update/time/{id}/{flightId}")
+    public String updateTimeFlight(@PathVariable Long id, @PathVariable Long flightId,
+                                   @RequestBody FlightDateTime times, HttpServletResponse resp) {
+        if (this.usersRepository.isUserIdAdmin(id)) {
+            try {
+                this.flightsRepository.updateFlightTimeById(flightId, times.getDepart(), times.getArrive());
                 return "Updated";
             }
             catch (Exception e) {
@@ -143,7 +193,7 @@ public class FlightsController {
             Optional<Flights> flt = this.flightsRepository.findById(id);
             if (flt.isPresent()) {
                 if (id == Long.valueOf(flt.get().getPilot())) {
-                    this.flightsRepository.updateFlightTimeById(flightId, departTime, arriveTime);
+                    this.flightsRepository.updateFlightTimeById(flightId, times.getDepart(), times.getArrive());
                     return "Updated";
                 } else {
                     return "Flight time changes requires requestor to be pilot of that flight";
@@ -193,7 +243,15 @@ public class FlightsController {
             resp.setStatus(500);
             return "User must be an admin";
         }
+    }
 
+
+    @GetMapping("/flights/show/{departDate}")
+    public ResolvedFlight[] getFlightsByDepartDate(@PathVariable String departDate, HttpServletResponse resp) {
+        if (departDate == null || departDate.equals("all")) {
+            return this.flightsRepository.getFlightsResolved();
+        }
+        return this.flightsRepository.getFlightsByDepartDateResolved(departDate);
     }
 
 
